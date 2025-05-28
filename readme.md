@@ -3,7 +3,7 @@
 ## Quickstart 
 ### Prequisites 
 
-- nix should be installed to run the agent script
+nix should be installed to run the agent script
 
 ```
 curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | sh -s -- install
