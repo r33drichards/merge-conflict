@@ -14,7 +14,7 @@ then set your anthropic key and run the agent with `nix run`
 
 ```
 export ANTHROPIC_API_KEY=
-nix run github:r33drichards/merge-conflict#agent
+nix run github:r33drichards/merge-conflict
 ```
 
 ## local testing
@@ -65,5 +65,5 @@ git merge test-branch2
 
 run the agent to solve the merge conflict for you
 ```
-ANTHROPIC_API_KEY='' nix run .#agent
+ANTHROPIC_API_KEY='' nix run .
 ```
