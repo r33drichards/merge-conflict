@@ -19,7 +19,7 @@
           # Create a script that runs the agent with a specific prompt file
           agentScript = promptFile: pkgs.writeScript "agent.sh" ''
             #!${pkgs.bash}/bin/bash
-            ${pkgs.python3.withPackages (ps: with ps; [ anthropic ])}/bin/python3 ${./agent.py} --prompt-file ${promptFile}
+            ${pkgs.python3.withPackages (ps: with ps; [ anthropic tenacity ])}/bin/python3 ${./agent.py} --prompt-file ${promptFile}
           '';
 
           # Create the agent app with a specific prompt file

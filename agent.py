@@ -1,11 +1,13 @@
 #! /usr/bin/env nix-shell
-#! nix-shell -i python3 -p "python3.withPackages(ps: with ps; [ anthropic ])"
+#! nix-shell -i python3 -p "python3.withPackages(ps: with ps; [ anthropic tenacity ])"
 import os
 import subprocess
 from typing import Dict, List, Any, Optional, Tuple, Union
 import argparse
+from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 
 import anthropic
+from anthropic import RateLimitError, APIError
 
 def main():
     parser = argparse.ArgumentParser(description='LLM Agent with configurable prompt file')
@@ -86,17 +88,31 @@ class LLM:
         You have access to the bash tool which allows you to run shell commands.\n\n""" + prompt
         self.tools = [bash_tool]
 
-    def __call__(self, content):
-        self.messages.append({"role": "user", "content": content})
-        self.messages[-1]["content"][-1]["cache_control"] = {"type": "ephemeral"}
-        response = self.client.messages.create(
+    @retry(
+        retry=retry_if_exception_type((RateLimitError, APIError)),
+        wait=wait_exponential(multiplier=1, min=4, max=60),
+        stop=stop_after_attempt(5),
+        reraise=True
+    )
+    def _call_anthropic(self):
+        return self.client.messages.create(
             model=self.model,
             max_tokens=20_000,
             system=self.system_prompt,
             messages=self.messages,
             tools=self.tools
         )
-        del self.messages[-1]["content"][-1]["cache_control"]
+
+    def __call__(self, content):
+        self.messages.append({"role": "user", "content": content})
+        self.messages[-1]["content"][-1]["cache_control"] = {"type": "ephemeral"}
+        try:
+            response = self._call_anthropic()
+        except (RateLimitError, APIError) as e:
+            print(f"\nRate limit or API error occurred: {str(e)}")
+            raise
+        finally:
+            del self.messages[-1]["content"][-1]["cache_control"]
         assistant_response = {"role": "assistant", "content": []}
         tool_calls = []
         output_text = ""
