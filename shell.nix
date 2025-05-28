@@ -2,7 +2,7 @@
 
 pkgs.mkShell {
   buildInputs = with pkgs; with python3Packages; [
-    python3
+    python
     numpy
     matplotlib
     scikit-learn
