@@ -185,6 +185,13 @@ if __name__ == "__main__":
 so don't take any actions that would break this. 
 
 
+when running the command `git rebase --continue` set `GIT_EDITOR=true` to avoid having to edit commit message 
+
+```
+GIT_EDITOR=true git rebase --continue
+```
+
+
 I want you to do this but for the current directory. use your shell tool to create files, see the status of a git repo, and run commands until you have solved the merge conflict please :) 
 
 
