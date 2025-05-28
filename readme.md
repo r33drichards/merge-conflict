@@ -1,5 +1,18 @@
 # an agent that resolves merge conflicts automatically
 
+## Prequisites 
+
+- nix should be installed to run the agent script
+
+## Quickstart 
+
+
+
+clone the repo
+
+```
+git clone git@github.com:/r33drichards/merge-conflict
+```
 
 to intentionally create a merge conflict, commit a file with the following contents: foo: foo. Commit. Branch off this commit and change one of the foo's to bar, foo: bar And branch of to another from your first branch and change the same line to foo: baz.
 
@@ -38,7 +51,7 @@ git merge test-branch
 git merge test-branch2
 ```
 
-
+run the agent to solve the merge conflict for you
 ```
 ANTHROPIC_API_KEY='' ./agent.py
 ```
