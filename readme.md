@@ -40,5 +40,5 @@ git merge test-branch2
 
 
 ```
-ANTHROPIC_API_KEY= ./agent.py
+ANTHROPIC_API_KEY='' ./agent.py
 ```
