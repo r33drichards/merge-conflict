@@ -36,7 +36,7 @@ index 5716ca5,7601807..0000000
 ... other changes 
 ```
 
-You will now create a .patch file and update the contents of foo using this patch to solve the merge conflict, and then delete your patch file to tidy up
+create a diff of the changes you want to make to resolve this conflict, and then apply the diff to the file 
 
 when running rebase continue or other git commands, be careful that you don't end up in wierd shell scenarios like a editor or pager view. this will break our agent loop. 
 
