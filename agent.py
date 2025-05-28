@@ -57,7 +57,7 @@ def execute_bash(command):
             ["bash", "-c", command],
             capture_output=True,
             text=True,
-            timeout=10
+            timeout=30
         )
         return f"STDOUT:\n{result.stdout}\nSTDERR:\n{result.stderr}\nEXIT CODE: {result.returncode}"
     except Exception as e:
