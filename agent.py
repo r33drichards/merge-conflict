@@ -3,14 +3,20 @@
 import os
 import subprocess
 from typing import Dict, List, Any, Optional, Tuple, Union
+import argparse
 
 import anthropic
 
 def main():
+    parser = argparse.ArgumentParser(description='LLM Agent with configurable prompt file')
+    parser.add_argument('--prompt-file', type=str, default='prompt.md',
+                      help='Path to the prompt file (default: prompt.md)')
+    args = parser.parse_args()
+    
     try:
         print("\n=== LLM Agent Loop with Claude and Bash Tool ===\n")
         print("Type 'exit' to end the conversation.\n")
-        loop(LLM("claude-3-7-sonnet-latest"))
+        loop(LLM("claude-3-7-sonnet-latest", args.prompt_file))
     except KeyboardInterrupt:
         print("\n\nExiting. Goodbye!")
     except Exception as e:
@@ -65,14 +71,14 @@ def user_input():
     return [{"type": "text", "text": x}]
 
 class LLM:
-    def __init__(self, model):
+    def __init__(self, model, prompt_file):
         if "ANTHROPIC_API_KEY" not in os.environ:
             raise ValueError("ANTHROPIC_API_KEY environment variable not found.")
         self.client = anthropic.Anthropic()
         self.model = model
         self.messages = []
-        # read ./prompt.md 
-        with open("prompt.md", 'r') as f:
+        # read prompt file from provided path
+        with open(prompt_file, 'r') as f:
             prompt = f.read()
         self.system_prompt = """You are a helpful AI assistant with access to bash commands.
         You can help the user by executing commands and interpreting the results.
