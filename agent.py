@@ -1,9 +1,5 @@
-#!/usr/bin/env -S uv run --script
-# /// script
-# dependencies = [
-#   "anthropic>=0.45.0",
-# ]
-# ///
+#! /usr/bin/env nix-shell
+#! nix-shell -i python3 -p "python3.withPackages(ps: with ps; [ anthropic ])"
 import os
 import subprocess
 from typing import Dict, List, Any, Optional, Tuple, Union
@@ -75,10 +71,13 @@ class LLM:
         self.client = anthropic.Anthropic()
         self.model = model
         self.messages = []
+        # read ./prompt.md 
+        with open("prompt.md", 'r') as f:
+            prompt = f.read()
         self.system_prompt = """You are a helpful AI assistant with access to bash commands.
         You can help the user by executing commands and interpreting the results.
         Be careful with destructive commands and always explain what you're doing.
-        You have access to the bash tool which allows you to run shell commands."""
+        You have access to the bash tool which allows you to run shell commands.\n\n""" + prompt
         self.tools = [bash_tool]
 
     def __call__(self, content):

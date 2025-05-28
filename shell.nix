@@ -15,6 +15,8 @@ pkgs.mkShell {
     torch-tb-profiler
     opencv4
     tqdm
+    nbconvert
+    anthropic
     # tensordict
   ];
   shellHook = ''
