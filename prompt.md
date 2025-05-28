@@ -191,6 +191,7 @@ when running the command `git rebase --continue` set `GIT_EDITOR=true` to avoid 
 GIT_EDITOR=true git rebase --continue
 ```
 
+You must not refactor the code. Keep the code as is and just solve the conflicts as minimally as you can, without rewriting or rewording things. just solve merge conflicts, don't change the readme or the function arguement names if you think something is better. :) 
 
 I want you to do this but for the current directory. use your shell tool to create files, see the status of a git repo, and run commands until you have solved the merge conflict please :) 
 
