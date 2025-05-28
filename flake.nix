@@ -7,35 +7,28 @@
 
 
   outputs = { self, nixpkgs, flake-utils, ... }@inputs:
-    (flake-utils.lib.eachDefaultSystem
-      (system:
-        let
-          pkgs = import nixpkgs {
-            inherit system;
-          };
+    flake-utils.lib.eachDefaultSystem (system:
+      let
+        pkgs = import nixpkgs {
+          inherit system;
+        };
 
-          devshell = pkgs.callPackage ./shell.nix { inherit pkgs;};
+        devshell = pkgs.callPackage ./shell.nix { inherit pkgs; };
 
-          # Create a script that runs the agent with a specific prompt file
-          agentScript = promptFile: pkgs.writeScript "agent.sh" ''
-            #!${pkgs.bash}/bin/bash
-            ${pkgs.python3.withPackages (ps: with ps; [ anthropic tenacity ])}/bin/python3 ${./agent.py} --prompt-file ${promptFile}
-          '';
+        # Create a script that runs the agent with a specific prompt file
+        agentScript = promptFile: pkgs.writeScriptBin "agent" ''
+          #!${pkgs.bash}/bin/bash
+          exec ${pkgs.python3.withPackages (ps: with ps; [ anthropic tenacity ])}/bin/python3 ${./agent.py} --prompt-file ${promptFile} "$@"
+        '';
 
-          # Create the agent app with a specific prompt file
-          agentApp = promptFile: flake-utils.lib.mkApp {
-            drv = pkgs.writeScript "agent" (agentScript promptFile);
-            exePath = "";
-          };
-
-        in
-        {
-
-          devShells.default = devshell;
-          apps = {
-            agent = agentApp ./prompt.md;  # Default agent using prompt.md
-          };
-
-        })
+      in
+      {
+        devShells.default = devshell;
+        packages.default = agentScript ./prompt.md;
+        apps.default = {
+          type = "app";
+          program = "${(agentScript ./prompt.md)}/bin/agent";
+        };
+      }
     );
 }
