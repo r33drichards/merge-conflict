@@ -1,10 +1,5 @@
 # an agent that resolves merge conflicts automatically
 
-
-```
-export ANTHROPIC_API_KEY=
-nix run github:r33drichards/merge-conflict#agent
-```
 ## Quickstart 
 ### Prequisites 
 
