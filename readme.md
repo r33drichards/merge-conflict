@@ -1,15 +1,28 @@
 # an agent that resolves merge conflicts automatically
 
+
+```
+export ANTHROPIC_API_KEY=
+nix run github:r33drichards/merge-conflict#agent
+```
+## Quickstart 
+### Prequisites 
+
+- nix should be installed to run the agent script
+
+```
+curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | sh -s -- install
+```
+
+then set your anthropic key and run the agent with `nix run`
+
+
 ```
 export ANTHROPIC_API_KEY=
 nix run github:r33drichards/merge-conflict#agent
 ```
 
-## Prequisites 
-
-- nix should be installed to run the agent script
-
-## Quickstart 
+## local testing
 
 
 clone the repo
@@ -57,5 +70,5 @@ git merge test-branch2
 
 run the agent to solve the merge conflict for you
 ```
-ANTHROPIC_API_KEY='' ./agent.py
+ANTHROPIC_API_KEY='' nix run .#agent
 ```
