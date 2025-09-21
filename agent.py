@@ -2,7 +2,7 @@
 #! nix-shell -i python3 -p "python3.withPackages(ps: with ps; [ anthropic tenacity ])"
 import os
 import subprocess
-from typing import Dict, List, Any, Optional, Tuple, Union
+from typing import Optional
 import argparse
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 
@@ -13,25 +13,42 @@ def main():
     parser = argparse.ArgumentParser(description='LLM Agent with configurable prompt file')
     parser.add_argument('--prompt-file', type=str, default='prompt.md',
                       help='Path to the prompt file (default: prompt.md)')
+    parser.add_argument('-e', '--exit', dest='exit_after_response', action='store_true',
+                      help='Exit after the first agent turn instead of prompting for input')
+    parser.add_argument('-t', '--task', type=str,
+                      help='Initial user input/task to start the conversation')
     args = parser.parse_args()
     
     try:
         print("\n=== LLM Agent Loop with Claude and Bash Tool ===\n")
         print("Type 'exit' to end the conversation.\n")
-        loop(LLM("claude-3-7-sonnet-latest", args.prompt_file))
+        loop(
+            LLM("claude-3-7-sonnet-latest", args.prompt_file),
+            initial_task=args.task,
+            exit_after_first=args.exit_after_response,
+        )
     except KeyboardInterrupt:
         print("\n\nExiting. Goodbye!")
     except Exception as e:
         print(f"\n\nAn error occurred: {str(e)}")
 
-def loop(llm):
-    msg = user_input()
+def loop(llm, initial_task: Optional[str] = None, exit_after_first: bool = False):
+    if initial_task is not None:
+        msg = [{"type": "text", "text": initial_task}]
+    else:
+        if exit_after_first:
+            print("\nExiting due to -e/--exit flag before prompting for input.")
+            return
+        msg = user_input()
     while True:
         output, tool_calls = llm(msg)
         print("Agent: ", output)
         if tool_calls:
             msg = [ handle_tool_call(tc) for tc in tool_calls ]
         else:
+            if exit_after_first:
+                print("\nExiting due to -e/--exit flag.")
+                break
             msg = user_input()
 
 
