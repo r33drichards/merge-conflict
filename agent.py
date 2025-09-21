@@ -17,6 +17,11 @@ def main():
                       help='Exit after the first agent turn instead of prompting for input')
     parser.add_argument('-t', '--task', type=str,
                       help='Initial user input/task to start the conversation')
+    parser.add_argument('-m', '--model', type=str, default='claude-3-7-sonnet-latest',
+                      help='Model to use (default: claude-3-7-sonnet-latest)')
+    # validation command 
+    parser.add_argument('-v', '--validate', type=str,
+                      help='Validate the command', default='! git rev-parse -q --verify REBASE_HEAD >/dev/null')
     args = parser.parse_args()
     
     try:
@@ -26,30 +31,105 @@ def main():
             LLM("claude-3-7-sonnet-latest", args.prompt_file),
             initial_task=args.task,
             exit_after_first=args.exit_after_response,
+            validate_command=args.validate,
         )
     except KeyboardInterrupt:
         print("\n\nExiting. Goodbye!")
     except Exception as e:
         print(f"\n\nAn error occurred: {str(e)}")
 
-def loop(llm, initial_task: Optional[str] = None, exit_after_first: bool = False):
+def loop(llm, initial_task: Optional[str] = None, exit_after_first: bool = False, validate_command: Optional[str] = None):
+    def run_validation(cmd: Optional[str]):
+        if not cmd:
+            return True, ""
+        try:
+            result = subprocess.run(
+                ["bash", "-c", cmd],
+                capture_output=True,
+                text=True,
+                timeout=30
+            )
+            formatted = (
+                f"STDOUT:\n{result.stdout}\n"
+                f"STDERR:\n{result.stderr}\n"
+                f"EXIT CODE: {result.returncode}"
+            )
+            return result.returncode == 0, formatted
+        except Exception as e:
+            return False, f"Error executing validation command: {str(e)}"
+
+    def build_validation_failure_message(cmd: str, output_text: str) -> list:
+        prompt_text = (
+            "Validation command failed. You must continue until it succeeds with exit code 0.\n\n"
+            f"Command: {cmd}\n\n"
+            f"Output:\n{output_text}\n\n"
+            "Please diagnose and take further actions (use the bash tool) "
+            "to make the validation command succeed."
+        )
+        return [{"type": "text", "text": prompt_text}]
+
+    awaiting_validation_exit = False
+
     if initial_task is not None:
         msg = [{"type": "text", "text": initial_task}]
     else:
         if exit_after_first:
-            print("\nExiting due to -e/--exit flag before prompting for input.")
-            return
-        msg = user_input()
+            ok, out = run_validation(validate_command)
+            if ok:
+                print("\nExiting due to -e/--exit flag before prompting for input.")
+                return
+            print("\nValidation failed; continuing the agent loop.")
+            msg = build_validation_failure_message(validate_command or "", out)
+            awaiting_validation_exit = True
+        else:
+            msg, exit_requested = user_input()
+            if exit_requested:
+                ok, out = run_validation(validate_command)
+                if ok:
+                    print("\nExiting agent loop. Goodbye!")
+                    return
+                print("\nValidation failed; continuing the agent loop.")
+                msg = build_validation_failure_message(validate_command or "", out)
+                awaiting_validation_exit = True
+
     while True:
         output, tool_calls = llm(msg)
         print("Agent: ", output)
         if tool_calls:
             msg = [ handle_tool_call(tc) for tc in tool_calls ]
+            # After tool execution, if we are awaiting validation, re-check now
+            if awaiting_validation_exit:
+                ok, out = run_validation(validate_command)
+                if ok:
+                    print("\nValidation succeeded. Exiting.")
+                    break
+                msg = build_validation_failure_message(validate_command or "", out)
         else:
-            if exit_after_first:
-                print("\nExiting due to -e/--exit flag.")
-                break
-            msg = user_input()
+            if exit_after_first and not awaiting_validation_exit:
+                ok, out = run_validation(validate_command)
+                if ok:
+                    print("\nExiting due to -e/--exit flag.")
+                    break
+                print("\nValidation failed; continuing the agent loop.")
+                msg = build_validation_failure_message(validate_command or "", out)
+                awaiting_validation_exit = True
+            else:
+                if awaiting_validation_exit:
+                    ok, out = run_validation(validate_command)
+                    if ok:
+                        print("\nValidation succeeded. Exiting.")
+                        break
+                    msg = build_validation_failure_message(validate_command or "", out)
+                else:
+                    msg, exit_requested = user_input()
+                    if exit_requested:
+                        ok, out = run_validation(validate_command)
+                        if ok:
+                            print("\nExiting agent loop. Goodbye!")
+                            break
+                        print("\nValidation failed; continuing the agent loop.")
+                        msg = build_validation_failure_message(validate_command or "", out)
+                        awaiting_validation_exit = True
 
 
 bash_tool = {
@@ -85,9 +165,8 @@ def execute_bash(command):
 def user_input():
     x = input("You: ")
     if x.lower() in ["exit", "quit"]:
-        print("\nExiting agent loop. Goodbye!")
-        raise SystemExit(0)
-    return [{"type": "text", "text": x}]
+        return ([{"type": "text", "text": ""}], True)
+    return ([{"type": "text", "text": x}], False)
 
 class LLM:
     def __init__(self, model, prompt_file):
